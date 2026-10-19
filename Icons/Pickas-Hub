@@ -4,7 +4,7 @@ IconsModule.Version = "1.0.0"
 IconsModule.DefaultLibrary = "lucide"
 
 local BASE_URL =
-    "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/"
+    "https://github.com/PickasHub/Pickas-Hub/tree/main/Icons/dist"
 
 local Libraries = {
     gravity = "gravity.lua",
