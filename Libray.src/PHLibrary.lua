@@ -1,18 +1,3 @@
---[[
-    PICKA'S HUB UI Library v2  (Roblox / Luau)
-    Dark purple glass, animated aurora + rainbow, glowing borders, music player, user card.
-    Mobile + Desktop. Everything follows Library.Theme.Accent (Theme Color) live.
-
-    local Library = loadstring(game:HttpGet("RAW_LINK"))()
-    local Window  = Library:CreateWindow({ Title = "Picka's Hub" })
-    local Tab = Window:AddTab({ Title = "Main", Icon = "house" })
-    local Sub = Tab:AddSubTab({ Title = "Farm", Icon = "sprout" })
-    Sub:AddToggle({ Title = "Auto Farm", Flag = "AutoFarm", Callback = function(v) end })
-
-    Text:   Library:T("Save") translates a built-in string; Library:SetLanguage("Japan") switches language.
-    Icons:  Lucide icons from Footagesus/Icons (Icon = "house"). "bolt" is drawn in code.
-]]
-
 local TS = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
