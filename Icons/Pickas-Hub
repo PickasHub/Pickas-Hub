@@ -1,5 +1,5 @@
 
-local BASE = "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/"
+local BASE = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/Icons/Pickas-Hub"
 
 local IconModule = {
     Version = "2.0.0",
