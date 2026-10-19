@@ -32,7 +32,7 @@ local Config = {
 		Supported = "https://raw.githubusercontent.com/PickasHub/Library.Source/refs/heads/main/Support-games",
 		Premium = "https://raw.githubusercontent.com/PickasHub/PHLoader/refs/heads/main/suppoted-game/Premium",
 		Keysystem = "https://raw.githubusercontent.com/PickasHub/PHLoader/refs/heads/main/suppoted-game/Keysystem",
-		Keyless = "https://raw.githubusercontent.com/PickasHub/PHLoader/refs/heads/main/suppoted-game/Keyless",
+		Keyless = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/GameSupported/Keyless.lua",
 	},
 }
 
