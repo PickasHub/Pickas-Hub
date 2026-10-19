@@ -1,1 +1,35 @@
 
+return {
+
+    ----- Keysystem
+    Keysystem = {
+
+        [17625359962] = "https://raw.githubusercontent.com/PickasHub/LoaderV2/refs/heads/main/RivalsV00.00.03",
+        [76503495566299] = "https://raw.githubusercontent.com/PickasHub/LoaderV2/refs/heads/main/Steal-a-chickenV2",
+
+    },
+
+    ----- Keyless
+    Keyless = {
+
+        [17625359962] = "https://cdn.luaprotect.dev/u/a2ee68/NclxO8ewnJ79FBNv",
+        [76503495566299] = "https://raw.githubusercontent.com/PickasHub/LoaderV2/refs/heads/main/Steal%25a%25chickenV1",
+
+    },
+
+    ----- Premium
+    Premium = {
+
+        [17625359962] = "PASTE_PREMIUM_SCRIPT_URL_HERE",
+
+    },
+
+    ----- Both
+    Both = {
+
+        [17625359962] = true,
+        [76503495566299] = true,
+
+    },
+
+}
