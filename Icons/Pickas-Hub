@@ -1,0 +1,159 @@
+local IconsModule = {}
+
+IconsModule.Version = "1.0.0"
+IconsModule.DefaultLibrary = "lucide"
+
+local BASE_URL =
+    "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/"
+
+local Libraries = {
+    gravity = "gravity.lua",
+    lucide = "lucide.lua",
+    sfsymbols = "sfsymbols.lua",
+    solar = "solar.lua",
+}
+
+local Aliases = {
+    sf = "sfsymbols",
+    ["sf-symbols"] = "sfsymbols",
+    ["sf symbols"] = "sfsymbols",
+}
+
+local Cache = {}
+
+local function NormalizeLibrary(name)
+    if type(name) ~= "string" then
+        return nil
+    end
+
+    name = string.lower(name)
+    name = Aliases[name] or name
+
+    if Libraries[name] then
+        return name
+    end
+
+    return nil
+end
+
+local function LoadLibrary(name)
+    name = NormalizeLibrary(name)
+
+    if not name then
+        return nil, "Unknown icon library"
+    end
+
+    if Cache[name] then
+        return Cache[name]
+    end
+
+    local url = BASE_URL .. Libraries[name]
+
+    local success, source = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not success or type(source) ~= "string" then
+        return nil, "Failed to download library: " .. name
+    end
+
+    local compiler = loadstring
+
+    if type(compiler) ~= "function" then
+        return nil, "loadstring is unavailable"
+    end
+
+    local chunk, compileError = compiler(source)
+
+    if not chunk then
+        return nil, tostring(compileError)
+    end
+
+    local executed, result = pcall(chunk)
+
+    if not executed or type(result) ~= "table" then
+        return nil, "Invalid icon library: " .. name
+    end
+
+    Cache[name] = result
+
+    return result
+end
+
+function IconsModule.Get(iconName, libraryName)
+    if type(iconName) ~= "string" then
+        return nil
+    end
+
+    local library, err = LoadLibrary(
+        libraryName or IconsModule.DefaultLibrary
+    )
+
+    if not library then
+        return nil, err
+    end
+
+    return library[iconName]
+end
+
+function IconsModule.GetLibrary(libraryName)
+    return LoadLibrary(libraryName)
+end
+
+function IconsModule.Find(iconName)
+    if type(iconName) ~= "string" then
+        return nil, "Icon name must be a string"
+    end
+
+    local names = {
+        "gravity",
+        "lucide",
+        "sfsymbols",
+        "solar",
+    }
+
+    for _, name in ipairs(names) do
+        local library = LoadLibrary(name)
+
+        if library and library[iconName] then
+            return library[iconName], name
+        end
+    end
+
+    return nil, "Icon not found"
+end
+
+function IconsModule.GetLibraries()
+    local result = {}
+
+    for name in pairs(Libraries) do
+        table.insert(result, name)
+    end
+
+    table.sort(result)
+
+    return result
+end
+
+function IconsModule.Has(iconName, libraryName)
+    local asset = IconsModule.Get(iconName, libraryName)
+    return asset ~= nil
+end
+
+function IconsModule.ClearCache(libraryName)
+    if libraryName then
+        local name = NormalizeLibrary(libraryName)
+
+        if not name then
+            return false
+        end
+
+        Cache[name] = nil
+        return true
+    end
+
+    table.clear(Cache)
+    return true
+end
+
+return IconsModule
