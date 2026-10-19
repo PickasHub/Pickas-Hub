@@ -15,8 +15,8 @@ local IconModule = {
 local SOURCES = {
     gravity = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/Icons/dist/gravity.lua",
     lucide = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/Icons/dist/lucide.lua",
-    sfsymbols = "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/sfsymbols.lua",
-    solar = "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/solar.lua",
+    sfsymbols = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/Icons/dist/sfsymbols.lua",
+    solar = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/Icons/dist/solar.lua",
 }
 
 local function NormalizeName(name)
