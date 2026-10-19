@@ -1,159 +1,382 @@
-local IconsModule = {}
 
-IconsModule.Version = "1.0.0"
-IconsModule.DefaultLibrary = "lucide"
+local BASE = "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/"
 
-local BASE_URL =
-    "https://github.com/PickasHub/Pickas-Hub/tree/main/Icons/dist"
-
-local Libraries = {
-    gravity = "gravity.lua",
-    lucide = "lucide.lua",
-    sfsymbols = "sfsymbols.lua",
-    solar = "solar.lua",
+local IconModule = {
+    Version = "2.0.0",
+    Name = "PICKA'S HUB IconsModule",
+    IconsType = "lucide",
+    BaseURL = BASE,
+    Icons = {},
+    Loaded = {},
+    Errors = {},
 }
 
-local Aliases = {
-    sf = "sfsymbols",
-    ["sf-symbols"] = "sfsymbols",
-    ["sf symbols"] = "sfsymbols",
+local SOURCES = {
+    gravity = "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/gravity.lua",
+    lucide = "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/lucide.lua",
+    sfsymbols = "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/sfsymbols.lua",
+    solar = "https://raw.githubusercontent.com/PickasHub/Pickas-Hub/refs/heads/main/Icons/dist/solar.lua",
 }
 
-local Cache = {}
-
-local function NormalizeLibrary(name)
+local function NormalizeName(name)
     if type(name) ~= "string" then
         return nil
     end
 
-    name = string.lower(name)
-    name = Aliases[name] or name
+    name = name:gsub("([a-z0-9])([A-Z])", "%1-%2")
+    name = name:lower()
+    name = name:gsub("[%s_]+", "-")
+    name = name:gsub("%-+", "-")
+    name = name:gsub("^%-", "")
+    name = name:gsub("%-$", "")
 
-    if Libraries[name] then
-        return name
+    return name
+end
+
+local function GetLocalModule(libraryName)
+    if not script or not script.Parent then
+        return nil
+    end
+
+    local moduleScript = script.Parent:FindFirstChild(libraryName)
+
+    if not moduleScript then
+        return nil
+    end
+
+    if not moduleScript:IsA("ModuleScript") then
+        return nil
+    end
+
+    local success, result = pcall(require, moduleScript)
+
+    if success and type(result) == "table" then
+        return result
     end
 
     return nil
 end
 
-local function LoadLibrary(name)
-    name = NormalizeLibrary(name)
-
-    if not name then
-        return nil, "Unknown icon library"
+local function LoadRemoteLibrary(url)
+    if type(loadstring) ~= "function" then
+        return nil, "loadstring is unavailable"
     end
 
-    if Cache[name] then
-        return Cache[name]
+    if not game or type(game.HttpGet) ~= "function" then
+        return nil, "HTTP loading is unavailable"
     end
-
-    local url = BASE_URL .. Libraries[name]
 
     local success, source = pcall(function()
         return game:HttpGet(url)
     end)
 
     if not success or type(source) ~= "string" then
-        return nil, "Failed to download library: " .. name
+        return nil, "Failed to download icon source"
     end
 
-    local compiler = loadstring
-
-    if type(compiler) ~= "function" then
-        return nil, "loadstring is unavailable"
+    if source == "" then
+        return nil, "Downloaded source is empty"
     end
 
-    local chunk, compileError = compiler(source)
+    local compileSuccess, compiled = pcall(loadstring, source)
 
-    if not chunk then
-        return nil, tostring(compileError)
+    if not compileSuccess or type(compiled) ~= "function" then
+        return nil, "Failed to compile icon source"
     end
 
-    local executed, result = pcall(chunk)
+    local executeSuccess, result = pcall(compiled)
 
-    if not executed or type(result) ~= "table" then
-        return nil, "Invalid icon library: " .. name
+    if not executeSuccess then
+        return nil, "Failed to execute icon source"
     end
 
-    Cache[name] = result
+    if type(result) ~= "table" then
+        return nil, "Icon source did not return a table"
+    end
 
     return result
 end
 
-function IconsModule.Get(iconName, libraryName)
-    if type(iconName) ~= "string" then
+local function LoadLibrary(libraryName, url)
+    libraryName = NormalizeName(libraryName)
+
+    if not libraryName or not SOURCES[libraryName] then
+        return nil, "Unknown icon library"
+    end
+
+    if IconModule.Loaded[libraryName] then
+        return IconModule.Icons[libraryName]
+    end
+
+    local icons, remoteError = LoadRemoteLibrary(url)
+
+    if type(icons) ~= "table" then
+        icons = GetLocalModule(libraryName)
+    end
+
+    if type(icons) ~= "table" then
+        IconModule.Errors[libraryName] =
+            remoteError or "Remote and local loading failed"
+
+        return nil, IconModule.Errors[libraryName]
+    end
+
+    IconModule.Icons[libraryName] = icons
+    IconModule.Loaded[libraryName] = true
+    IconModule.Errors[libraryName] = nil
+
+    return icons
+end
+
+function IconModule.Load(libraryName)
+    libraryName = NormalizeName(libraryName)
+
+    local url = SOURCES[libraryName]
+
+    if not url then
+        return nil, "Unknown icon library: " .. tostring(libraryName)
+    end
+
+    return LoadLibrary(libraryName, url)
+end
+
+function IconModule.LoadAll()
+    local results = {}
+
+    for libraryName, url in pairs(SOURCES) do
+        local icons, err = LoadLibrary(libraryName, url)
+
+        results[libraryName] = {
+            Success = type(icons) == "table",
+            Count = type(icons) == "table" and #icons or 0,
+            Error = err,
+        }
+
+        if type(icons) == "table" then
+            local count = 0
+
+            for _ in pairs(icons) do
+                count += 1
+            end
+
+            results[libraryName].Count = count
+        end
+    end
+
+    return results
+end
+
+function IconModule.GetIcon(iconName, libraryName)
+    libraryName = NormalizeName(libraryName or IconModule.IconsType)
+    iconName = NormalizeName(iconName)
+
+    if not iconName then
         return nil
     end
 
-    local library, err = LoadLibrary(
-        libraryName or IconsModule.DefaultLibrary
-    )
+    local icons = IconModule.Icons[libraryName]
 
-    if not library then
-        return nil, err
+    if type(icons) ~= "table" then
+        icons = IconModule.Load(libraryName)
     end
 
-    return library[iconName]
-end
-
-function IconsModule.GetLibrary(libraryName)
-    return LoadLibrary(libraryName)
-end
-
-function IconsModule.Find(iconName)
-    if type(iconName) ~= "string" then
-        return nil, "Icon name must be a string"
+    if type(icons) ~= "table" then
+        return nil
     end
 
-    local names = {
-        "gravity",
-        "lucide",
-        "sfsymbols",
-        "solar",
-    }
+    local directValue = icons[iconName]
 
-    for _, name in ipairs(names) do
-        local library = LoadLibrary(name)
+    if type(directValue) == "string" then
+        return directValue
+    end
 
-        if library and library[iconName] then
-            return library[iconName], name
+    for key, value in pairs(icons) do
+        if NormalizeName(key) == iconName then
+            if type(value) == "string" then
+                return value
+            end
+
+            if type(value) == "table" then
+                return value.Image
+                    or value.image
+                    or value.Icon
+                    or value.icon
+                    or value.Asset
+                    or value.asset
+            end
         end
     end
 
-    return nil, "Icon not found"
+    return nil
 end
 
-function IconsModule.GetLibraries()
-    local result = {}
-
-    for name in pairs(Libraries) do
-        table.insert(result, name)
+function IconModule.GetIcons(iconNames, libraryName)
+    if type(iconNames) ~= "table" then
+        return {}
     end
 
-    table.sort(result)
+    local results = {}
 
-    return result
-end
-
-function IconsModule.Has(iconName, libraryName)
-    local asset = IconsModule.Get(iconName, libraryName)
-    return asset ~= nil
-end
-
-function IconsModule.ClearCache(libraryName)
-    if libraryName then
-        local name = NormalizeLibrary(libraryName)
-
-        if not name then
-            return false
-        end
-
-        Cache[name] = nil
-        return true
+    for _, iconName in ipairs(iconNames) do
+        results[iconName] = IconModule.GetIcon(
+            iconName,
+            libraryName
+        )
     end
 
-    table.clear(Cache)
+    return results
+end
+
+function IconModule.GetLibrary(libraryName)
+    libraryName = NormalizeName(libraryName or IconModule.IconsType)
+
+    if not IconModule.Icons[libraryName] then
+        IconModule.Load(libraryName)
+    end
+
+    return IconModule.Icons[libraryName]
+end
+
+function IconModule.SetDefault(libraryName)
+    libraryName = NormalizeName(libraryName)
+
+    if not SOURCES[libraryName] then
+        return false
+    end
+
+    IconModule.IconsType = libraryName
     return true
 end
 
-return IconsModule
+function IconModule.IsLoaded(libraryName)
+    libraryName = NormalizeName(libraryName)
+    return IconModule.Loaded[libraryName] == true
+end
+
+function IconModule.GetStatus()
+    local status = {}
+
+    for libraryName in pairs(SOURCES) do
+        local icons = IconModule.Icons[libraryName]
+        local count = 0
+
+        if type(icons) == "table" then
+            for _ in pairs(icons) do
+                count += 1
+            end
+        end
+
+        status[libraryName] = {
+            Loaded = IconModule.Loaded[libraryName] == true,
+            Count = count,
+            Error = IconModule.Errors[libraryName],
+        }
+    end
+
+    return status
+end
+
+local GetIcons = {}
+
+local function CreateLibraryGetter(libraryName)
+    return function(first, ...)
+        local names
+
+        if first == GetIcons then
+            names = {...}
+        else
+            names = {first, ...}
+        end
+
+        local library = IconModule.GetLibrary(libraryName)
+
+        if not library then
+            return {}
+        end
+
+        if #names == 0 or names[1] == nil then
+            return library
+        end
+
+        local results = {}
+
+        for _, iconName in ipairs(names) do
+            if type(iconName) == "string" then
+                results[iconName] = IconModule.GetIcon(
+                    iconName,
+                    libraryName
+                )
+            end
+        end
+
+        return results
+    end
+end
+
+GetIcons.Gravity = CreateLibraryGetter("gravity")
+GetIcons.Lucide = CreateLibraryGetter("lucide")
+GetIcons.SFSymbols = CreateLibraryGetter("sfsymbols")
+GetIcons.Solar = CreateLibraryGetter("solar")
+
+GetIcons.SfSymbols = GetIcons.SFSymbols
+GetIcons.SF = GetIcons.SFSymbols
+
+function GetIcons.GetIcon(first, second, third)
+    local iconName
+    local libraryName
+
+    if first == GetIcons then
+        libraryName = second
+        iconName = third
+    else
+        iconName = first
+        libraryName = second
+    end
+
+    return IconModule.GetIcon(iconName, libraryName)
+end
+
+function GetIcons.GetLibrary(first, second)
+    local libraryName
+
+    if first == GetIcons then
+        libraryName = second
+    else
+        libraryName = first
+    end
+
+    return IconModule.GetLibrary(libraryName)
+end
+
+function GetIcons.Load(first, second)
+    local libraryName
+
+    if first == GetIcons then
+        libraryName = second
+    else
+        libraryName = first
+    end
+
+    return IconModule.Load(libraryName)
+end
+
+function GetIcons.SetDefault(first, second)
+    local libraryName
+
+    if first == GetIcons then
+        libraryName = second
+    else
+        libraryName = first
+    end
+
+    return IconModule.SetDefault(libraryName)
+end
+
+function GetIcons.GetStatus()
+    return IconModule.GetStatus()
+end
+
+IconModule.GetIcons = GetIcons
+IconModule.API = GetIcons
+
+return IconModule
