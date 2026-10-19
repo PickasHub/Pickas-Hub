@@ -1,6 +1,6 @@
 -- Example Usage: https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/Icons/ExampleUsage.lua
 
-local BASE = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/Icons/Pickas-Hub"
+local BASE = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/Icons/icons.lua"
 
 local IconModule = {
     Version = "2.0.0",
