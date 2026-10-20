@@ -15,7 +15,7 @@ local LocalPlayer = Players.LocalPlayer
 local Config = {
 	Title = "Picka's Hub",
 	Logo = "rbxassetid://109882288573862",
-	GetKeyLink = "https://main.pickazhub.workers.dev/getkey",
+	GetKeyLink = "https://discord.gg/R69H4D4JHA",
 	Website = "https://main.pickazhub.workers.dev/",
 	DiscordLink = "https://discord.gg/R3rDNwrV7y",
 	TelegramLink = "https://t.me/+MGEV4AC7LEllZDJl",
@@ -24,8 +24,8 @@ local Config = {
 	KeyFile = "PickasHub/key.txt",
 	Credits = {
 		{ "Owner", "PickaMeoww" },
-		{ "Administration", "JM" },
-		{ "Helper", "VINI" },
+		{ "Administration", "None" },
+		{ "Helper", "None" },
 	},
 	Api = "https://main.pickazhub.workers.dev",
 	URLs = {
