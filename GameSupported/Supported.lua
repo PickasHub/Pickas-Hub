@@ -1,6 +1,6 @@
 local allowedGames = {
-    [1234567890] = true,  -- GameId (universe)
-    [9876543210] = true,
+    [17625359962] = true,  -- GameId (universe)
+    [116191653750036] = true,
 }
 
 if not allowedGames[game.GameId] then
