@@ -15,7 +15,7 @@ local LocalPlayer = Players.LocalPlayer
 local Config = {
 	Title = "Picka's Hub",
 	Logo = "rbxassetid://109882288573862",
-	GetKeyLink = "https://discord.gg/R69H4D4JHA",
+	GetKeyLink = "https://discord.gg/rzk2MSCNNp",
 	Website = "https://main.pickazhub.workers.dev/",
 	DiscordLink = "https://discord.gg/R3rDNwrV7y",
 	TelegramLink = "https://t.me/+MGEV4AC7LEllZDJl",
@@ -24,14 +24,14 @@ local Config = {
 	KeyFile = "PickasHub/key.txt",
 	Credits = {
 		{ "Owner", "PickaMeoww" },
-		{ "Administration", "None" },
-		{ "Helper", "None" },
+		{ "Administration", "" },
+		{ "Helper", "" },
 	},
 	Api = "https://main.pickazhub.workers.dev",
 	URLs = {
-		Supported = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/GameSupported/Supported.lua",
-		Premium = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/GameSupported/Premium.lua",
-		Keysystem = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/GameSupported/Keysystem.lua",
+		Supported = "https://raw.githubusercontent.com/PickasHub/Library.Source/refs/heads/main/Support-games",
+		Premium = "https://raw.githubusercontent.com/PickasHub/PHLoader/refs/heads/main/suppoted-game/Premium",
+		Keysystem = "https://raw.githubusercontent.com/PickasHub/PHLoader/refs/heads/main/suppoted-game/Keysystem",
 		Keyless = "https://raw.githubusercontent.com/pickapicksmm/Pickas-Hub/refs/heads/main/GameSupported/Keyless.lua",
 	},
 }
@@ -357,7 +357,7 @@ local function toMap(list)
 	return m
 end
 
-local Data = { loaded = false, supportedList = {}, premium = {}, keysystem = {}, keyless = {} }
+local Data = { loaded = false, fromSite = false, universes = {}, supportedList = {}, premium = {}, keysystem = {}, keyless = {} }
 
 local function loadData()
 	local function fetch(url)
@@ -368,7 +368,31 @@ local function loadData()
 	Data.premium = toMap(fetch(Config.URLs.Premium))
 	Data.keysystem = toMap(fetch(Config.URLs.Keysystem))
 	Data.keyless = toMap(fetch(Config.URLs.Keyless))
-	if #Data.supportedList == 0 then
+	local site = httpJson(Config.Api .. "/api/state")
+	if type(site) == "table" and type(site.games) == "table" then
+		local list = {}
+		for _, g in ipairs(site.games) do
+			local id = tonumber(tostring(g.link or ""):match("games/(%d+)"))
+			if id then
+				table.insert(list, {
+					Id = id,
+					Mode = detectMode(g.label),
+					Name = g.name,
+					Universe = tonumber(g.uni),
+					Icon = g.img,
+					Playing = g.playing,
+					Visits = g.visits,
+					Status = g.status,
+				})
+				if g.uni then
+					Data.universes[tonumber(g.uni)] = true
+				end
+			end
+		end
+		Data.supportedList = list
+		Data.fromSite = true
+	end
+	if not Data.fromSite and #Data.supportedList == 0 then
 		local seen = {}
 		for _, map in ipairs({ Data.keysystem, Data.keyless, Data.premium }) do
 			for id, e in pairs(map) do
@@ -383,6 +407,9 @@ local function loadData()
 end
 
 local function isSupported(placeId)
+	if Data.universes[game.GameId] then
+		return true
+	end
 	for _, e in ipairs(Data.supportedList) do
 		if e.Id == placeId then
 			return true
@@ -1448,7 +1475,7 @@ local function addGameCard(e, idx)
 		Parent = card,
 	})
 	label({
-		Text = modeLabel(e),
+		Text = modeLabel(e) .. (e.Status and ("  |  " .. e.Status) or ""),
 		TextSize = 12,
 		TextColor3 = T.Accent,
 		Font = Enum.Font.GothamBold,
@@ -1491,7 +1518,12 @@ local function addGameCard(e, idx)
 		end
 	end)
 	task.spawn(function()
-		local info = fetchInfo(e.Id)
+		local info
+		if e.Universe then
+			info = { Universe = e.Universe, Name = e.Name, Playing = e.Playing, Visits = e.Visits, Icon = e.Icon }
+		else
+			info = fetchInfo(e.Id)
+		end
 		if not info then
 			return
 		end
@@ -1644,4 +1676,4 @@ task.spawn(function()
 	for i, e in ipairs(Data.supportedList) do
 		addGameCard(e, i)
 	end
-end)
+	e
