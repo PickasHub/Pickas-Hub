@@ -1,3 +1,19 @@
+--[[
+    PICKA'S HUB UI Library v2  (Roblox / Luau)
+    Dark purple glass, animated aurora + rainbow, glowing borders, music player, user card.
+    Mobile + Desktop. Everything follows Library.Theme.Accent (Theme Color) live.
+
+    local Library = loadstring(game:HttpGet("RAW_LINK"))()
+    local Window  = Library:CreateWindow({ Title = "Picka's Hub" })
+    local Tab = Window:AddTab({ Title = "Main", Icon = "house" })
+    local Sub = Tab:AddSubTab({ Title = "Farm", Icon = "sprout" })
+    Sub:AddToggle({ Title = "Auto Farm", Flag = "AutoFarm", Callback = function(v) end })
+
+    Sidebar: Window:SetSidebar(true) / :ToggleSidebar() collapses the sidebar to icons only.
+    Text:   Library:T("Save") translates a built-in string; Library:SetLanguage("Japan") switches language.
+    Icons:  Lucide icons from Footagesus/Icons (Icon = "house"). "bolt" is drawn in code.
+]]
+
 local TS = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
@@ -8,7 +24,7 @@ local LP = Players.LocalPlayer
 local setclip = setclipboard or toclipboard or (syn and syn.write_clipboard) or function() end
 
 local Library = {
-    Version = "2.9.0", Flags = {}, Icons = {}, Theme = { Accent = Color3.fromRGB(150, 85, 255) },
+    Version = "3.0.0", Flags = {}, Icons = {}, Theme = { Accent = Color3.fromRGB(150, 85, 255) },
     _acc = {}, _set = {}, _rot = {}, _spin = {}, _aur = {}, _glass = {}, _corn = {}, _tick = {}, _errors = {}, _trs = {}, Lang = "English", _folder = "PickasHub/Configs",
     Smooth = true, Radius = 16, GlassDelta = 0, FloatImage = 109882288573862,
     LowFx = false,
@@ -65,6 +81,8 @@ function Library:SetGlass(t)
         if not g.f.Parent then table.remove(Library._glass, i)
         elseif g.f.BackgroundTransparency < .999 then g.f.BackgroundTransparency = math.clamp(g.b + Library.GlassDelta, 0, 1) end
     end
+    local mf = Library._mainFrame
+    if mf and mf.Parent and mf.Visible and mf.BackgroundTransparency < .999 then mf.BackgroundTransparency = math.clamp(Library.GlassDelta, 0, 1) end
 end
 function Library:SetRadius(n)
     Library.Radius = n
@@ -1031,8 +1049,8 @@ function Tab:_moveInd(st)
     task.defer(function()
         RS.Heartbeat:Wait()
         if not (st._btn and st._btn.Parent and self._ind.Parent) then return end
-        local bp, pp = st._btn.AbsolutePosition, self._page.AbsolutePosition
-        Tween(self._ind, { Position = UDim2.fromOffset(bp.X - pp.X, 40), Size = UDim2.fromOffset(st._btn.AbsoluteSize.X, 2) }, .35, Enum.EasingStyle.Quint)
+        local bp, pp = st._btn.AbsolutePosition, self._strip.AbsolutePosition
+        Tween(self._ind, { Position = UDim2.fromOffset(bp.X - pp.X, 30), Size = UDim2.fromOffset(st._btn.AbsoluteSize.X, 2) }, .35, Enum.EasingStyle.Quint)
     end)
 end
 function Tab:_show(anim)
@@ -1048,7 +1066,7 @@ function Tab:AddSubTab(o)
     local st = setmetatable({ _tab = self, _n = 0 }, SubTab)
     st._pg = Page(self._page, UDim2.fromOffset(0, 46), UDim2.new(1, 0, 1, -46)) st._c = st._pg.scroll
     st._btn = New("TextButton", { AutoButtonColor = false, Text = "", BackgroundTransparency = 1, AutomaticSize = X, Size = UDim2.fromOffset(0, 30),
-        LayoutOrder = #self._subs + 1, Parent = self._row }, { New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }) })
+        LayoutOrder = #self._subs + 1, Parent = self._strip }, { New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }) })
     New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = st._btn })
     st._ico = Ico(st._btn, o.Icon or "dot", 13, C.Sub) st._ico.LayoutOrder = 0
     st._lbl = Txt(st._btn, o.Title, 12, { AutomaticSize = X, Size = UDim2.new(0, 0, 1, 0), LayoutOrder = 1, TextColor3 = C.Sub })
@@ -1077,13 +1095,54 @@ function Window:_moveHL(tab)
     task.defer(function()
         RS.Heartbeat:Wait()
         if not (self._hl and self._hl.Parent and tab._btn.Parent) then return end
-        local bp, sp = tab._btn.AbsolutePosition, self._side.AbsolutePosition
+        local bp, sp = tab._btn.AbsolutePosition, self._tabsList.AbsolutePosition
         local pos = UDim2.fromOffset(bp.X - sp.X, bp.Y - sp.Y)
         local size = UDim2.fromOffset(tab._btn.AbsoluteSize.X, tab._btn.AbsoluteSize.Y)
         if not self._hlInit then self._hlInit = true self._hl.Position = pos self._hl.Size = size self._hl.Visible = true
         else Tween(self._hl, { Position = pos, Size = size }, .28) end
     end)
 end
+function Window:_snapHL()
+    local tab, hl = self._cur, self._hl
+    if not (tab and hl and hl.Parent and tab._btn.Parent and self._hlInit) then return end
+    local bp, lp = tab._btn.AbsolutePosition, self._tabsList.AbsolutePosition
+    hl.Position = UDim2.fromOffset(bp.X - lp.X, bp.Y - lp.Y)
+    hl.Size = UDim2.fromOffset(tab._btn.AbsoluteSize.X, tab._btn.AbsoluteSize.Y)
+end
+function Window:SetSidebar(c)
+    c = c and true or false
+    if self._collapsed == c then return end
+    self._collapsed = c
+    Library.Flags.SidebarCollapsed = c
+    local w = c and self._sideC or self._sideW
+    local function T(o, p, t) if o then Tween(o, p, t or .3, Enum.EasingStyle.Quint) end end
+    T(self._side, { Size = UDim2.new(0, w, 1, -46) })
+    T(self._content, { Position = UDim2.fromOffset(w, 46), Size = UDim2.new(1, -w, 1, -46) })
+    T(self._cbtn, { Position = UDim2.new(1, c and -12 or -8, 0, 8) })
+    SetIcon(self._cbtn, c and "chevron-right" or "chevron-left", c and ">" or "<", 18)
+    if c then self._sf.Visible = false else self._sf.Visible = true end
+    for _, t in ipairs(self._tabs) do
+        T(t._ico, { Position = UDim2.new(0, c and 13 or 12, .5, -8) })
+        if c then T(t._lbl, { TextTransparency = 1 }, .12) task.delay(.12, function() if self._collapsed then t._lbl.Visible = false end end)
+        else t._lbl.Visible = true t._lbl.TextTransparency = 1 T(t._lbl, { TextTransparency = 0 }, .25) end
+    end
+    if self._uc then
+        T(self._uc, { Position = UDim2.new(0, c and 7 or 8, 1, -8), Size = UDim2.new(1, c and -14 or -16, 0, 50) })
+        T(self._uav, { Position = UDim2.fromOffset(c and 4 or 8, 8) })
+        T(self._udot, { Position = UDim2.fromOffset(c and 40 or 44, 44) })
+        for _, l in ipairs({ self._unm, self._uus, self._ust }) do
+            if c then T(l, { TextTransparency = 1 }, .12) task.delay(.12, function() if self._collapsed then l.Visible = false end end)
+            else l.Visible = true l.TextTransparency = 1 T(l, { TextTransparency = 0 }, .25) end
+        end
+    end
+    local t0 = os.clock()
+    local conn
+    conn = RS.Heartbeat:Connect(function()
+        if os.clock() - t0 > .45 then conn:Disconnect() end
+        self:_snapHL()
+    end)
+end
+function Window:ToggleSidebar() self:SetSidebar(not self._collapsed) end
 function Window:_select(tab)
     for _, t in ipairs(self._tabs) do
         t._page.Visible = t == tab
@@ -1096,14 +1155,22 @@ end
 function Window:AddTab(o)
     local tab = setmetatable({ _win = self, _n = 0, _subs = {}, Title = o.Title }, Tab)
     tab._btn = New("TextButton", { AutoButtonColor = false, Text = "", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 36), LayoutOrder = #self._tabs + 1, Parent = self._tabsList })
-    Ico(tab._btn, o.Icon or "dot", 16).Position = UDim2.new(0, 12, .5, -8)
+    tab._ico = Ico(tab._btn, o.Icon or "dot", 16) tab._ico.Position = UDim2.new(0, self._collapsed and 13 or 12, .5, -8)
     tab._lbl = Txt(tab._btn, o.Title, 12, { Position = UDim2.fromOffset(36, 0), Size = UDim2.new(1, -40, 1, 0), Font = Enum.Font.GothamSemibold, TextTruncate = Enum.TextTruncate.AtEnd, TextColor3 = C.Sub })
-    tab._btn.MouseEnter:Connect(function() if self._cur ~= tab then Tween(tab._lbl, { TextColor3 = C.Text }, .15) end end)
-    tab._btn.MouseLeave:Connect(function() if self._cur ~= tab then Tween(tab._lbl, { TextColor3 = C.Sub }, .15) end end)
+    tab._btn.MouseEnter:Connect(function()
+        if self._cur ~= tab then Tween(tab._lbl, { TextColor3 = C.Text }, .15) end
+        if self._collapsed and Library._tip then Library._tip.Text = tostring(tab._lbl.Text) Library._tip.Visible = true end
+    end)
+    tab._btn.MouseLeave:Connect(function()
+        if self._cur ~= tab then Tween(tab._lbl, { TextColor3 = C.Sub }, .15) end
+        if self._collapsed and Library._tip then Library._tip.Visible = false end
+    end)
     tab._page = New("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = self._content })
     tab._row = New("ScrollingFrame", { BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(8, 8), Size = UDim2.new(1, -16, 0, 32), CanvasSize = UDim2.new(), AutomaticCanvasSize = X,
-        ScrollBarThickness = 0, ScrollingDirection = Enum.ScrollingDirection.X, Visible = false, Parent = tab._page }, { New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center }) })
-    tab._ind = New("Frame", { Position = UDim2.fromOffset(8, 40), Size = UDim2.fromOffset(0, 3), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, Parent = tab._page }, { Corner() })
+        ScrollBarThickness = 0, ScrollingDirection = Enum.ScrollingDirection.X, Visible = false, Parent = tab._page })
+    tab._ind = New("Frame", { Position = UDim2.fromOffset(0, 30), Size = UDim2.fromOffset(0, 2), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Visible = false, Parent = tab._row }, { Corner() })
+    tab._strip = New("Frame", { BackgroundTransparency = 1, AutomaticSize = X, Size = UDim2.new(0, 0, 1, 0), Parent = tab._row },
+        { New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }) })
     Bind(function(c) tab._ind.BackgroundColor3 = c end)
     tab._main = Page(tab._page, UDim2.new(), UDim2.fromScale(1, 1)) tab._c = tab._main.scroll
     tab._btn.MouseButton1Click:Connect(function() self:_select(tab) end)
@@ -1139,43 +1206,56 @@ function Window:SetGame(name)
     if #name > 26 then name = name:sub(1, 25) .. "..." end
     self._game.Text = name self._gamef.Visible = name ~= ""
 end
+function Window:_hideRows()
+    local tab = self._cur if not tab then return end
+    local sc = tab._c
+    if tab._hasSub then for _, st in ipairs(tab._subs) do if st._on then sc = st._c end end end
+    for _, r in ipairs(sc:GetChildren()) do
+        if r:IsA("CanvasGroup") then Tween(r, { GroupTransparency = 1 }, .14, Enum.EasingStyle.Quad, Enum.EasingDirection.In) end
+    end
+end
 function Window:SetVisible(v)
     self._vis = v
-    local m, sc, clip, st = self._main, self._scale, self._clip, self._stroke
+    local m, sc, st = self._main, self._scale, self._stroke
     local aur, bar, side, ct = self._aurg, self._bar, self._sidef, self._content
     local Q, EX, QT, In = Enum.EasingStyle.Quad, Enum.EasingStyle.Exponential, Enum.EasingStyle.Quart, Enum.EasingDirection.In
     local BAR, SIDE = UDim2.fromOffset(0, 0), UDim2.fromOffset(0, 46)
+    local A = math.clamp(Library.GlassDelta, 0, 1)
     if v then
         local base = self._base or m.Position
         m.Visible = true
         bar.Position = BAR side.Position = SIDE
         if Library.LowFx then
-            m.Position = base sc.Scale = 1 aur.GroupTransparency = 0 bar.GroupTransparency = 0 side.GroupTransparency = 0 ct.GroupTransparency = 0
-            clip.GroupTransparency = 1 m.BackgroundTransparency = 1 st.Transparency = 1
-            Tween(clip, { GroupTransparency = 0 }, .15) Tween(m, { BackgroundTransparency = 0 }, .15) Tween(st, { Transparency = .35 }, .15)
+            m.Position = base sc.Scale = 1 ct.Visible = true
+            aur.GroupTransparency = 1 bar.GroupTransparency = 1 side.GroupTransparency = 1 m.BackgroundTransparency = 1 st.Transparency = 1
+            Tween(aur, { GroupTransparency = 0 }, .15) Tween(bar, { GroupTransparency = 0 }, .15) Tween(side, { GroupTransparency = 0 }, .15)
+            Tween(m, { BackgroundTransparency = A }, .15) Tween(st, { Transparency = .35 }, .15)
             return
         end
-        clip.GroupTransparency = 0 sc.Scale = .94 m.BackgroundTransparency = 1 st.Transparency = 1
-        aur.GroupTransparency = 1 bar.GroupTransparency = 1 side.GroupTransparency = 1 ct.GroupTransparency = 1
+        sc.Scale = .94 m.BackgroundTransparency = 1 st.Transparency = 1
+        aur.GroupTransparency = 1 bar.GroupTransparency = 1 side.GroupTransparency = 1 ct.Visible = false
         bar.Position = UDim2.fromOffset(0, -14) side.Position = UDim2.fromOffset(-18, 46)
         m.Position = UDim2.new(base.X.Scale, base.X.Offset, base.Y.Scale, base.Y.Offset + 14)
         Tween(sc, { Scale = 1 }, .55, EX) Tween(m, { Position = base }, .55, EX)
-        Tween(m, { BackgroundTransparency = 0 }, .3, Q) Tween(st, { Transparency = .35 }, .4, Q) Tween(aur, { GroupTransparency = 0 }, .7, Q)
+        Tween(m, { BackgroundTransparency = A }, .3, Q) Tween(st, { Transparency = .35 }, .4, Q) Tween(aur, { GroupTransparency = 0 }, .7, Q)
         task.delay(.1, function() if self._vis then Tween(bar, { GroupTransparency = 0, Position = BAR }, .45, EX) end end)
         task.delay(.18, function() if self._vis then Tween(side, { GroupTransparency = 0, Position = SIDE }, .5, EX) end end)
         task.delay(.3, function()
             if not self._vis then return end
-            ct.GroupTransparency = 0
+            ct.Visible = true
             if self._cur then self._cur:_show(true) end
         end)
     else
         local base = m.Position self._base = base
         if Library.LowFx then
-            Tween(clip, { GroupTransparency = 1 }, .15) Tween(m, { BackgroundTransparency = 1 }, .15) Tween(st, { Transparency = 1 }, .15)
-            task.delay(.16, function() if not self._vis then m.Visible = false clip.GroupTransparency = 0 end end)
+            ct.Visible = false
+            Tween(aur, { GroupTransparency = 1 }, .15) Tween(bar, { GroupTransparency = 1 }, .15) Tween(side, { GroupTransparency = 1 }, .15)
+            Tween(m, { BackgroundTransparency = 1 }, .15) Tween(st, { Transparency = 1 }, .15)
+            task.delay(.16, function() if not self._vis then m.Visible = false end end)
             return
         end
-        Tween(ct, { GroupTransparency = 1 }, .14, Q, In)
+        self:_hideRows()
+        task.delay(.15, function() if not self._vis then ct.Visible = false end end)
         Tween(side, { GroupTransparency = 1, Position = UDim2.fromOffset(-12, 46) }, .22, Q, In)
         Tween(bar, { GroupTransparency = 1, Position = UDim2.fromOffset(0, -10) }, .22, Q, In)
         task.delay(.12, function()
@@ -1205,7 +1285,7 @@ function Window:SetUserCard(o)
     if o.Status then self._ust.Text = o.Status end
 end
 function Window:Modal(o)
-    local ov = New("TextButton", { Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = self._clip or self._main })
+    local ov = New("TextButton", { Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = self._main }, { Corner(16, true) })
     Tween(ov, { BackgroundTransparency = .45 }, .2)
     local p = New("Frame", { AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(o.Width or 270, 0), AutomaticSize = Y, BackgroundColor3 = C.Dark1,
         BackgroundTransparency = .1, ZIndex = 51, Parent = ov }, { Corner(14, true), Pad(10), List(6), New("UIScale", { Scale = .9 }) })
@@ -1300,11 +1380,10 @@ function Library:CreateWindow(o)
         bg.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, a), ColorSequenceKeypoint.new(.55, Color3.fromRGB(7, 4, 13)), ColorSequenceKeypoint.new(1, b) })
     end)
     W._main = main W._scale = New("UIScale", { Parent = main }) W._stroke = New("UIStroke", { Color = Color3.fromRGB(74, 58, 110), Thickness = 1, Transparency = .35, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = main })
-    local clip = New("CanvasGroup", { Name = "Clip", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = main }, { Corner(16, true) })
-    W._clip = clip Library._gui = gui
+    Library._gui = gui Library._mainFrame = main
 
     -- aurora
-    local aur = New("CanvasGroup", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = clip }) W._aurg = aur
+    local aur = New("CanvasGroup", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = main }, { Corner(16, true) }) W._aurg = aur
     local specs = { { y = .22, r = -18, o = 0 }, { y = .50, r = 14, o = .05 }, { y = .78, r = -8, o = -.04 }, { y = .95, r = 22, o = .07 } }
     for i, sp in ipairs(specs) do
         local f = New("Frame", { AnchorPoint = Vector2.new(.5, .5), Size = UDim2.fromScale(1.9, .5), Position = UDim2.fromScale(.5, sp.y), Rotation = sp.r, BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = aur })
@@ -1313,7 +1392,8 @@ function Library:CreateWindow(o)
     end
 
     -- header
-    local bar = New("CanvasGroup", { Size = UDim2.new(1, 0, 0, 46), BackgroundColor3 = Color3.fromRGB(14, 10, 24), BorderSizePixel = 0, Parent = clip }) GlassReg(bar, .25) W._bar = bar
+    local bar = New("CanvasGroup", { Size = UDim2.new(1, 0, 0, 46), BackgroundTransparency = 1, BorderSizePixel = 0, Parent = main }) W._bar = bar
+    New("Frame", { AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = Color3.fromRGB(70, 56, 104), BackgroundTransparency = .6, BorderSizePixel = 0, Parent = bar })
     local left = New("Frame", { BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -110, 1, 0), Parent = bar }, { List(8, Enum.FillDirection.Horizontal) })
     left.UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     W._left = left
@@ -1348,13 +1428,13 @@ function Library:CreateWindow(o)
     end)
 
     -- sidebar: search + tabs + user card
-    local side = New("CanvasGroup", { Position = UDim2.fromOffset(0, 46), Size = UDim2.new(0, sideW, 1, -46), BackgroundColor3 = Color3.fromRGB(12, 9, 21), BorderSizePixel = 0, Parent = clip }) GlassReg(side, .35) W._sidef = side
-    W._side = side
-    W._hl = New("Frame", { Visible = false, BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = .86, BorderSizePixel = 0, Parent = side },
-        { Corner(8, true), New("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0, .5), Position = UDim2.new(0, 0, .5, 0), Size = UDim2.fromOffset(3, 16), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0 }, { Corner() }) })
-    Bind(function(c) W._hl.BackgroundColor3 = c W._hl.Bar.BackgroundColor3 = c end)
-    local sf = New("Frame", { Position = UDim2.fromOffset(8, 8), Size = UDim2.new(1, -16, 0, 32), BackgroundColor3 = C.Dark2, BackgroundTransparency = .4, Parent = side },
+    W._sideW, W._sideC = sideW, 56
+    local side = New("CanvasGroup", { Position = UDim2.fromOffset(0, 46), Size = UDim2.new(0, sideW, 1, -46), BackgroundTransparency = 1, BorderSizePixel = 0, Parent = main })
+    W._sidef = side W._side = side
+    New("Frame", { AnchorPoint = Vector2.new(1, 0), Position = UDim2.fromScale(1, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundColor3 = Color3.fromRGB(70, 56, 104), BackgroundTransparency = .6, BorderSizePixel = 0, Parent = side })
+    local sf = New("Frame", { Position = UDim2.fromOffset(8, 8), Size = UDim2.new(1, -52, 0, 32), BackgroundColor3 = C.Dark2, BackgroundTransparency = .4, Parent = side },
         { Corner(8, true), New("UIStroke", { Color = Library.Theme.Accent, Transparency = .9 }) })
+    W._sf = sf
     Bind(function(c) sf.UIStroke.Color = c end)
     Ico(sf, "search", 14, C.Sub, "?").Position = UDim2.fromOffset(9, 9)
     local sbx = New("TextBox", { BackgroundTransparency = 1, Position = UDim2.fromOffset(30, 0), Size = UDim2.new(1, -36, 1, 0), Text = "", PlaceholderText = "Search", PlaceholderColor3 = C.Sub,
@@ -1363,17 +1443,26 @@ function Library:CreateWindow(o)
     sbx.Focused:Connect(function() Tween(sf.UIStroke, { Transparency = .35 }, .2) end)
     sbx.FocusLost:Connect(function() Tween(sf.UIStroke, { Transparency = .9 }, .25) end)
     sbx:GetPropertyChangedSignal("Text"):Connect(function() W:_filter(sbx.Text) end)
-    W._tabsList = New("ScrollingFrame", { Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 1, -112), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 0,
-        CanvasSize = UDim2.new(), AutomaticCanvasSize = Y, Parent = side }, { List(5), Pad(7) })
+    W._cbtn = IconBtn(side, "chevron-left", "<", function() W:ToggleSidebar() end, 32)
+    W._cbtn.AnchorPoint = Vector2.new(1, 0) W._cbtn.Position = UDim2.new(1, -8, 0, 8)
+    W._tabsScroll = New("ScrollingFrame", { Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 1, -112), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 0,
+        CanvasSize = UDim2.new(), AutomaticCanvasSize = Y, Parent = side }, { Pad(7) })
+    W._hl = New("Frame", { Visible = false, BackgroundColor3 = Library.Theme.Accent, BackgroundTransparency = .86, BorderSizePixel = 0, Parent = W._tabsScroll },
+        { Corner(8, true), New("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0, .5), Position = UDim2.new(0, 0, .5, 0), Size = UDim2.fromOffset(3, 16), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0 }, { Corner() }) })
+    Bind(function(c) W._hl.BackgroundColor3 = c W._hl.Bar.BackgroundColor3 = c end)
+    W._tabsList = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Y, Parent = W._tabsScroll }, { List(5) })
     W._tabsList.UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+    main:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() W:_snapHL() end)
+    Library.Flags.SidebarCollapsed = false
+    Library._set.SidebarCollapsed = function(v) W:SetSidebar(v) end
 
     Safe("user card", function()
     local uc = New("Frame", { AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 8, 1, -8), Size = UDim2.new(1, -16, 0, 50), BackgroundColor3 = C.Glass, Parent = side },
         { Corner(10, true), New("UIStroke", { Color = Color3.fromRGB(70, 56, 104), Transparency = .8 }) })
-    GlassReg(uc, .4)
+    GlassReg(uc, .4) W._uc = uc
     W._uav = New("ImageLabel", { Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(34, 34), BackgroundColor3 = C.Dark2, Parent = uc }, { Corner(), New("UIStroke", { Color = Library.Theme.Accent, Thickness = 2 }) })
     Bind(function(c) W._uav.UIStroke.Color = c end)
-    New("Frame", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromOffset(44, 44), Size = UDim2.fromOffset(10, 10), BackgroundColor3 = C.Success, Parent = uc }, { Corner(), New("UIStroke", { Color = C.Dark1, Thickness = 2 }) })
+    W._udot = New("Frame", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromOffset(44, 44), Size = UDim2.fromOffset(10, 10), BackgroundColor3 = C.Success, Parent = uc }, { Corner(), New("UIStroke", { Color = C.Dark1, Thickness = 2 }) })
     W._unm = Txt(uc, "", 12, { Position = UDim2.fromOffset(50, 5), Size = UDim2.new(1, -56, 0, 14), Font = Enum.Font.GothamSemibold, TextTruncate = Enum.TextTruncate.AtEnd })
     W._uus = Txt(uc, "", 10, { Position = UDim2.fromOffset(50, 20), Size = UDim2.new(1, -56, 0, 12), TextColor3 = C.Sub, TextTruncate = Enum.TextTruncate.AtEnd })
     W._ust = Txt(uc, "Online", 10, { Position = UDim2.fromOffset(50, 32), Size = UDim2.new(1, -56, 0, 12), TextColor3 = Library.Theme.Accent })
@@ -1381,10 +1470,10 @@ function Library:CreateWindow(o)
     W:SetUserCard({})
     end)
 
-    W._content = New("CanvasGroup", { BackgroundTransparency = 1, Position = UDim2.fromOffset(sideW, 46), Size = UDim2.new(1, -sideW, 1, -46), ClipsDescendants = true, Parent = clip })
+    W._content = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(sideW, 46), Size = UDim2.new(1, -sideW, 1, -46), ClipsDescendants = true, Parent = main })
 
     -- resize handle
-    local rh = New("Frame", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(22, 22), BackgroundTransparency = 1, ZIndex = 20, Parent = clip })
+    local rh = New("Frame", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1, 1), Size = UDim2.fromOffset(22, 22), BackgroundTransparency = 1, ZIndex = 20, Parent = main })
     for i = 1, 2 do New("Frame", { AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromOffset(13, 13), Size = UDim2.fromOffset(i * 6, 2), Rotation = -45, BackgroundColor3 = C.Sub, BorderSizePixel = 0, ZIndex = 20, Parent = rh }) end
     local s0
     DragDelta(rh, function() s0 = main.AbsoluteSize end, function(d)
